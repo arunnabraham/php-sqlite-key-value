@@ -1,0 +1,23 @@
+{
+    "name": "arunabraham/test-sqlite-key-value",
+    "type": "project",
+    "license": "ISC",
+    "autoload": {
+        "psr-4": {
+            "Arunabraham\\TestSqliteKeyValue\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Arun Abraham",
+            "email": "arunnabraham@gmail.com"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {
+        "psr/log": "^3.0",
+        "minicli/minicli": "^3.2",
+        "php-di/php-di": "^6.4",
+        "monolog/monolog": "^3.2"
+    }
+}

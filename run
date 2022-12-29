@@ -1,0 +1,22 @@
+#!/usr/bin/env php
+<?php
+
+use Arunabraham\TestSqliteKeyValue\{
+    SchemaGenerator,
+    FileToData,
+    InsertData,
+    DataStream
+};
+require __DIR__ . '/vendor/autoload.php';
+
+$fileData = new FileToData;
+$sqlite = new SQLite3('test.db');
+
+//Create Database
+
+(new SchemaGenerator)();
+//Insert Data
+(new InsertData($sqlite))($fileData->getData());
+
+// Fetch Result by pivot keys as columns
+(new DataStream($sqlite))();

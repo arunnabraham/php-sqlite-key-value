@@ -1,0 +1,8 @@
+#!/usr/bin/env php
+<?php
+
+use Arunabraham\TestSqliteKeyValue\SchemaGenerator;
+
+require __DIR__ . '/vendor/autoload.php';
+
+(new SchemaGenerator)();
