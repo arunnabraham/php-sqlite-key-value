@@ -18,6 +18,8 @@
         "psr/log": "^3.0",
         "minicli/minicli": "^3.2",
         "php-di/php-di": "^6.4",
-        "monolog/monolog": "^3.2"
+        "monolog/monolog": "^3.2",
+        "clue/reactphp-sqlite": "^1.5",
+        "react/async": "^4"
     }
 }
