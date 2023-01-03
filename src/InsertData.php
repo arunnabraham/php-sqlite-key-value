@@ -4,31 +4,29 @@ declare(strict_types=1);
 
 namespace Arunabraham\TestSqliteKeyValue;
 
+use Clue\React\SQLite\DatabaseInterface;
 use Exception;
 use Generator;
-use SQLite3;
 
 class InsertData
 {
-    public function __construct(private Sqlite3 $sqlite)
-    {
-    }
 
-    public function __invoke(Generator $iterator)
+    public function __invoke(DatabaseInterface $db, Generator $iterator)
     {
             try {
-                $this->sqlite->exec('BEGIN;');
+                $db->exec('BEGIN;');
                 foreach ($iterator as $info) {
+                    assert(is_string($info));
                     [$sku, $index, $contents] = explode("[~sep~]", $info);
                     foreach(json_decode($contents, true) as $key => $data)
                     {
-                        $this->sqlite->exec(sprintf($this->defineQuery(), (int)$sku, $key, (string)$data, $index));
+                        $db->query($this->defineQuery(),[(int)$sku, $key, (string)$data, $index]);
                     }
                 }
-                $this->sqlite->exec('COMMIT;');
+                $db->exec('COMMIT;');
             } catch(Exception $e) {
                 echo $e->getMessage();
-                $this->sqlite->exec('ROLLBACK;');
+                $db->exec('ROLLBACK;');
             }
     }
 
@@ -36,7 +34,7 @@ class InsertData
     {
         return <<<'Query'
         INSERT INTO data (sku, key, value, source)
-        VALUES (%d, '%s', '%s', '%s');
+        VALUES (?, ?, ?, ?)
         Query;
     }
 }

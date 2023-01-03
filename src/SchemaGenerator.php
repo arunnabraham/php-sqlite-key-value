@@ -4,18 +4,15 @@ declare(strict_types=1);
 
 namespace Arunabraham\TestSqliteKeyValue;
 
+use Clue\React\SQLite\DatabaseInterface;
 use Exception;
-use SQLite3;
 
 class SchemaGenerator
 {
-    public function __invoke()
+    public function __invoke(DatabaseInterface $db)
     {
-        $sqlite = new SQLite3(
-            __DIR__ . '/../test.db'
-        );
         try {
-            $sqlite->exec($this->defineQuery());
+            $db->exec($this->defineQuery());
         } catch(Exception $e) {
             echo $e->getMessage().PHP_EOL;
         }

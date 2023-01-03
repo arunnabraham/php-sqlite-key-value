@@ -4,43 +4,32 @@ declare(strict_types=1);
 
 namespace Arunabraham\TestSqliteKeyValue;
 
-use SQLite3;
+use Clue\React\SQLite\DatabaseInterface;
+use Clue\React\SQLite\Result;
+use React\Promise\PromiseInterface;
+
+use function React\Async\async;
+use function React\Async\await;
 
 class DataStream
 {
-    private $columns = [];
-    public function __construct(private Sqlite3 $sqlite)
+    private array $columns;
+
+    public function __invoke(DatabaseInterface $db): PromiseInterface
     {
-        $this->columns = $this->fetchColumns();
+        return $this->arraySet($db);
     }
 
-    public function __invoke()
+    private function fetchColumns(DatabaseInterface $db): PromiseInterface
     {
-        foreach ($this->arraySet() as $val) {
-            var_dump($val);
-        }
+        $query = $db->query($this->queryforColumns());
+        return $query;
     }
 
-    private function fetchColumns(): array
+    private function yieldAllData(DatabaseInterface $db): PromiseInterface
     {
-        $arrayKey = [];
-        $sqlite = $this->sqlite;
-        $query = $sqlite->query($this->queryforColumns());
-        while ($res = $query->fetchArray(SQLITE3_NUM)) {
-            $arrayKey[$res[0]] = "";
-        }
-        $query->reset();
-        return $arrayKey;
-    }
-
-    private function yieldAllData(): \Generator
-    {
-        $sqlite = $this->sqlite;
-        $query = $sqlite->query($this->fetchDataQuery());
-        while ($res = $query->fetchArray(SQLITE3_ASSOC)) {
-            yield $res;
-        }
-        $query->reset();
+        $query = $db->query($this->fetchDataQuery());
+        return $query;
     }
 
     private function queryforColumns(): string
@@ -57,33 +46,45 @@ class DataStream
         Query;
     }
 
-    private function getColumns(): array
+    private function arraySet(DatabaseInterface $db): PromiseInterface
     {
-        return $this->columns;
-    }
+      return async((function() use ($db){
+           $fetchColumns = $this->fetchColumns($db)->then(function (Result $res): array {
+                $columns = [];
+                foreach ($res->rows as $row) {
+                    $columns[$row['key']] = "";
+                }
+    
+                return $columns;
+            });
 
-    private function arraySet(): \Generator
-    {
-        $iterator = $this->yieldAllData();
-        $columns = $this->getColumns();
+            return $this->yieldAllData($db)->then(function (Result $dataObject) use ($fetchColumns): \Generator {
+                $iterate = function () use ($dataObject): \Generator {
+                    foreach ($dataObject->rows as $result) {
+                        yield $result;
+                    }
+                };
+                $columns = await($fetchColumns);
+                $this->columns = $columns;
+                $iterator = $iterate();
 
-        while ($iterator->valid()) {
-            $current = function () use ($iterator) {
-                return $iterator->current();
-            };
+                while ($iterator->valid()) {
+                    $current = fn() => $iterator->current();
 
-            $next = function () use ($iterator) {
-                $iterator->next();
-                return $iterator->current();
-            };
+                    $next = function () use ($iterator) {
+                        $iterator->next();
+                        return $iterator->current();
+                    };
 
-            $columns[$current()['key']] = $current()['value'];
-            
-            if ($current()['sku'] !== ($next()['sku'] ?? -1)) {
-                yield $columns;
-                unset($columns);
-                $columns = $this->getColumns();
-            }
-        }
+                    $columns[$current()['key']] = $current()['value'];
+
+                    if ($current()['sku'] !== ($next()['sku'] ?? -1)) {
+                        yield $columns;
+                        unset($columns);
+                        $columns = $this->columns;
+                    }
+                }
+            });
+        }))();
     }
 }
