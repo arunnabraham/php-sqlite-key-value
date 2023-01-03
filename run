@@ -7,16 +7,30 @@ use Arunabraham\TestSqliteKeyValue\{
     InsertData,
     DataStream
 };
+use Clue\React\SQLite\DatabaseInterface;
+use Clue\React\SQLite\Factory;
+
+use function React\Async\await;
+
 require __DIR__ . '/vendor/autoload.php';
 
 $fileData = new FileToData;
-$sqlite = new SQLite3('test.db');
+$sqlite = new Factory;
+$dbFile = 'test.db';
 
 //Create Database
-
-(new SchemaGenerator)();
-//Insert Data
-(new InsertData($sqlite))($fileData->getData());
-
-// Fetch Result by pivot keys as columns
-(new DataStream($sqlite))();
+$sqlite->open($dbFile)->then(function (DatabaseInterface $db) use ($fileData) {
+    (new SchemaGenerator)($db);
+    return $db;
+})->then(function(DatabaseInterface $db) use($fileData){
+    (new InsertData)($db, $fileData->getData());
+   return $db;
+})->then(function(DatabaseInterface $db){
+    $dbStream = (new DataStream)($db);
+    $dbStream->then(function ($result) {
+        foreach($result as $row) {
+            var_dump($row);
+        }
+    });
+    $db->quit();
+});
